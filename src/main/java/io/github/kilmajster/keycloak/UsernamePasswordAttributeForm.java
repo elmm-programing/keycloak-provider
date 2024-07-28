@@ -10,11 +10,16 @@ import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.UserProvider;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.ServicesLogger;
 
 import static io.github.kilmajster.keycloak.UsernamePasswordAttributeFormConfiguration.*;
 import static org.keycloak.services.validation.Validation.FIELD_PASSWORD;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 public class UsernamePasswordAttributeForm extends UsernamePasswordForm implements Authenticator {
 
@@ -37,8 +42,17 @@ public class UsernamePasswordAttributeForm extends UsernamePasswordForm implemen
 
     @Override
     protected boolean validateForm(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
-        return super.validateForm(context, formData)
-                && isUserAttributeValid(context, formData.getFirst(USER_ATTRIBUTE));
+    log.info("Form Data");
+    log.info(formData.toString());
+    String username =context.getHttpRequest().getDecodedFormParameters().getFirst("username");
+    UserModel user = context.getSession().users().searchForUserByUserAttributeStream(context.getRealm(), "cedula",username ).findFirst().orElse(null);
+    if (user != null) {
+        log.info("user found by cedula:");
+        log.info(user.getAttributes().toString());
+        formData.remove("username");
+        formData.add("username", user.getUsername());
+    }
+    return super.validateForm(context, formData);
     }
 
     private void setUserAttributeFormLabel(AuthenticationFlowContext context) {
